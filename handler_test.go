@@ -18,6 +18,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewHandler(t *testing.T) {
@@ -75,7 +77,7 @@ func TestNewHandler(t *testing.T) {
 		{
 			name:       "with a failing readiness check, /live should still succeed",
 			method:     "GET",
-			path:       "/live",
+			path:       "/live?full=1",
 			live:       true,
 			ready:      false,
 			expect:     http.StatusOK,
@@ -84,29 +86,38 @@ func TestNewHandler(t *testing.T) {
 		{
 			name:       "with a failing readiness check, /ready should fail",
 			method:     "GET",
-			path:       "/ready",
+			path:       "/ready?full=1",
 			live:       true,
 			ready:      false,
 			expect:     http.StatusServiceUnavailable,
-			expectBody: `{"test-readiness-check":"failed readiness check"}`,
+			expectBody: "{\n    \"test-readiness-check\": \"failed readiness check\"\n}",
 		},
 		{
 			name:       "with a failing liveness check, /live should fail",
 			method:     "GET",
-			path:       "/live",
+			path:       "/live?full=1",
 			live:       false,
 			ready:      true,
 			expect:     http.StatusServiceUnavailable,
-			expectBody: `{"test-liveness-check":"failed liveness check"}`,
+			expectBody: "{\n    \"test-liveness-check\": \"failed liveness check\"\n}",
 		},
 		{
 			name:       "with a failing liveness check, /ready should fail",
+			method:     "GET",
+			path:       "/ready?full=1",
+			live:       false,
+			ready:      true,
+			expect:     http.StatusServiceUnavailable,
+			expectBody: "{\n    \"test-liveness-check\": \"failed liveness check\"\n}",
+		},
+		{
+			name:       "with a failing liveness check, /ready without full=1 should fail with an empty body",
 			method:     "GET",
 			path:       "/ready",
 			live:       false,
 			ready:      true,
 			expect:     http.StatusServiceUnavailable,
-			expectBody: `{"test-liveness-check":"failed liveness check"}`,
+			expectBody: `{}`,
 		},
 	}
 	for _, tt := range tests {
@@ -126,24 +137,15 @@ func TestNewHandler(t *testing.T) {
 			}
 
 			req, err := http.NewRequest(tt.method, tt.path, nil)
-			if err != nil {
-				t.Fatal(err)
-			}
+			assert.NoError(t, err)
+
 			reqStr := tt.method + " " + tt.path
 			rr := httptest.NewRecorder()
 			h.ServeHTTP(rr, req)
-			if rr.Code != tt.expect {
-				t.Errorf("%s: ran %q, expected %v but got %v", tt.name, reqStr, tt.expect, rr.Code)
-				t.FailNow()
-			}
+			assert.Equal(t, tt.expect, rr.Code, "wrong code for %q", reqStr)
 
 			if tt.expectBody != "" {
-				if rr.Body.String() != tt.expectBody {
-					t.Errorf("%s: ran %q and got wrong body", tt.name, reqStr)
-					t.Errorf("expected: %q", tt.expectBody)
-					t.Errorf("     got: %q", rr.Body.String())
-					t.FailNow()
-				}
+				assert.Equal(t, tt.expectBody, rr.Body.String(), "wrong body for %q", reqStr)
 			}
 		})
 	}

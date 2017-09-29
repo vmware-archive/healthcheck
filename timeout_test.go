@@ -14,6 +14,7 @@
 package healthcheck
 
 import (
+	"net"
 	"testing"
 	"time"
 )
@@ -26,6 +27,14 @@ func TestTimeout(t *testing.T) {
 	err := tooSlow()
 	if _, isTimeoutError := err.(TimeoutError); !isTimeoutError {
 		t.Errorf("expected a TimeoutError, got %v", err)
+	}
+
+	if netErr, ok := err.(net.Error); !ok || !netErr.Timeout() {
+		t.Errorf("expected Timeout() to be true, got %v", err)
+	}
+
+	if netErr, ok := err.(net.Error); !ok || !netErr.Temporary() {
+		t.Errorf("expected Temporary() to be true, got %v", err)
 	}
 
 	notTooSlow := Timeout(func() error {

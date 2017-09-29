@@ -16,48 +16,27 @@ package healthcheck
 import (
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestTCPDialCheck(t *testing.T) {
-	if err := TCPDialCheck("heptio.com:80", 5*time.Second)(); err != nil {
-		t.Errorf("expected TCP check to heptio.com:80 to succeed, got %v", err)
-	}
-
-	if err := TCPDialCheck("heptio.com:25327", 5*time.Second)(); err == nil {
-		t.Errorf("expected TCP check to heptio.com:25327 fail, but got nil error")
-	}
+	assert.NoError(t, TCPDialCheck("heptio.com:80", 5*time.Second)())
+	assert.Error(t, TCPDialCheck("heptio.com:25327", 5*time.Second)())
 }
 
 func TestHTTPGetCheck(t *testing.T) {
-	if err := HTTPGetCheck("https://heptio.com", 5*time.Second)(); err != nil {
-		t.Errorf("expected HTTP GET check to http://heptio.com to succeed, got %v", err)
-	}
-
-	if err := HTTPGetCheck("http://heptio.com", 5*time.Second)(); err == nil {
-		t.Errorf("expected HTTP GET check to fail on a redirect (http->https) but got nil error")
-	}
-
-	if err := HTTPGetCheck("https://heptio.com/nonexistent", 5*time.Second)(); err == nil {
-		t.Errorf("expected HTTP GET check to http://heptio.com/nonexistent to fail, but got nil error")
-	}
+	assert.NoError(t, HTTPGetCheck("https://heptio.com", 5*time.Second)())
+	assert.Error(t, HTTPGetCheck("http://heptio.com", 5*time.Second)(), "redirect should fail")
+	assert.Error(t, HTTPGetCheck("https://heptio.com/nonexistent", 5*time.Second)(), "404 should fail")
 }
 
 func TestDNSResolveCheck(t *testing.T) {
-	if err := DNSResolveCheck("heptio.com", 5*time.Second)(); err != nil {
-		t.Errorf("expected DNS lookup for heptio.com to succeed, got %v", err)
-	}
-
-	if err := DNSResolveCheck("nonexistent.heptio.com", 5*time.Second)(); err == nil {
-		t.Errorf("expected DNS lookup for nonexistent.heptio.com to fail, but got nil error")
-	}
+	assert.NoError(t, DNSResolveCheck("heptio.com", 5*time.Second)())
+	assert.Error(t, DNSResolveCheck("nonexistent.heptio.com", 5*time.Second)())
 }
 
 func TestGoroutineCountCheck(t *testing.T) {
-	if err := GoroutineCountCheck(1000)(); err != nil {
-		t.Errorf("expected goroutine count check to succeed, but got %v", err)
-	}
-
-	if err := GoroutineCountCheck(0)(); err == nil {
-		t.Errorf("expected goroutine count check to fail, but got nil error")
-	}
+	assert.NoError(t, GoroutineCountCheck(1000)())
+	assert.Error(t, GoroutineCountCheck(0)())
 }

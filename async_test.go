@@ -14,8 +14,11 @@
 package healthcheck
 
 import (
+	"context"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestAsync(t *testing.T) {
@@ -25,23 +28,35 @@ func TestAsync(t *testing.T) {
 	}, 1*time.Millisecond)
 
 	// expect the first call to return ErrNoData since it takes 50ms to return the first time
-	if err := async(); err != ErrNoData {
-		t.Errorf("expected ErrNoData, but got %v", err)
-		t.FailNow()
-	}
+	assert.EqualError(t, async(), "no data yet")
 
 	// wait for the first run to finish
 	time.Sleep(100 * time.Millisecond)
 
 	// make sure the next call returns nil ~immediately
 	start := time.Now()
-	if err := async(); err != nil {
-		t.Errorf("unexpected error %v", err)
-		t.FailNow()
-	}
-	latency := time.Since(start)
-	if latency > (1 * time.Millisecond) {
-		t.Errorf("unexpected async() to return almost immediately, but it took %v", latency)
-		t.FailNow()
-	}
+	assert.NoError(t, async())
+	assert.WithinDuration(t, time.Now(), start, 1*time.Millisecond,
+		"expected async() to return almost immediately")
+}
+
+func TestAsyncWithContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// start an async check that counts how many times it was called
+	calls := 0
+	AsyncWithContext(ctx, func() error {
+		calls++
+		time.Sleep(1 * time.Millisecond)
+		return nil
+	}, 10*time.Millisecond)
+
+	// cancel the context which should stop things mid-flight
+	cancel()
+
+	// wait long enough for several runs to have happened
+	time.Sleep(100 * time.Millisecond)
+
+	// make sure the check was only executed roughly once
+	assert.InDelta(t, calls, 1, 1)
 }

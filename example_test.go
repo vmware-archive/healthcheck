@@ -46,11 +46,11 @@ func Example() {
 	// go http.ListenAndServe("0.0.0.0:8080", health)
 
 	// Make a request to the readiness endpoint and print the response.
-	fmt.Print(dumpRequest(health, "GET", "/ready?pretty=1"))
+	fmt.Print(dumpRequest(health, "GET", "/ready?full=1"))
 
 	// Output:
 	// HTTP/1.1 503 Service Unavailable
-	// Content-Length: 104
+	// Connection: close
 	// Content-Type: application/json; charset=utf-8
 	//
 	// {
@@ -118,11 +118,11 @@ func Example_advanced() {
 	time.Sleep(500 * time.Millisecond)
 
 	// Make a sample request to the /healthz endpoint and print the response.
-	fmt.Println(dumpRequest(mux, "GET", "/healthz?pretty=1"))
+	fmt.Println(dumpRequest(mux, "GET", "/healthz?full=1"))
 
 	// Output:
 	// HTTP/1.1 503 Service Unavailable
-	// Content-Length: 299
+	// Connection: close
 	// Content-Type: application/json; charset=utf-8
 	//
 	// {

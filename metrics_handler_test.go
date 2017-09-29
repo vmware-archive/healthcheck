@@ -22,6 +22,8 @@ import (
 	"testing"
 
 	"github.com/prometheus/client_golang/prometheus"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewMetricsHandler(t *testing.T) {
@@ -110,14 +112,11 @@ func TestNewMetricsHandlerEndpoints(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			req, err := http.NewRequest("GET", tt.path, nil)
-			if err != nil {
-				t.Fatal(err)
-			}
+			assert.NoError(t, err)
+
 			rr := httptest.NewRecorder()
 			tt.handler.ServeHTTP(rr, req)
-			if rr.Code != tt.expect {
-				t.Errorf("%s: expected %d, got %d", tt.name, tt.expect, rr.Code)
-			}
+			assert.Equal(t, tt.expect, rr.Code, "%s: wrong status", tt.name)
 		})
 	}
 }

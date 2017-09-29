@@ -16,22 +16,18 @@ package healthcheck
 import (
 	"errors"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestNewTrigger(t *testing.T) {
 	trigger := NewTrigger()
-	if trigger.Check()() != nil {
-		t.Error("expected initial state to be happy")
-	}
+	assert.NoError(t, trigger.Check()(), "expected initial state to be happy")
 
 	err := errors.New("test error")
 	trigger.Trip(err)
-	if trigger.Check()() != err {
-		t.Error("expected trigger to be tripped")
-	}
+	assert.EqualError(t, trigger.Check()(), "test error", "expected trigger to be tripped")
 
 	trigger.Reset()
-	if trigger.Check()() != nil {
-		t.Error("expected trigger to be happy after reset")
-	}
+	assert.NoError(t, trigger.Check()(), "expected trigger to be happy after reset")
 }

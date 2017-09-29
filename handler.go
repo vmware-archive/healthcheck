@@ -15,7 +15,6 @@ package healthcheck
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"sync"
 )
@@ -28,11 +27,12 @@ type basicHandler struct {
 	readinessChecks map[string]Check
 }
 
-// NewHandler creeates a new basic Handler
+// NewHandler creates a new basic Handler
 func NewHandler() Handler {
-	h := &basicHandler{}
-	h.livenessChecks = make(map[string]Check)
-	h.readinessChecks = make(map[string]Check)
+	h := &basicHandler{
+		livenessChecks:  make(map[string]Check),
+		readinessChecks: make(map[string]Check),
+	}
 	h.Handle("/live", http.HandlerFunc(h.LiveEndpoint))
 	h.Handle("/ready", http.HandlerFunc(h.ReadyEndpoint))
 	return h
@@ -73,7 +73,7 @@ func (s *basicHandler) collectChecks(checks map[string]Check, resultsOut map[str
 
 func (s *basicHandler) handle(w http.ResponseWriter, r *http.Request, checks ...map[string]Check) {
 	if r.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -83,20 +83,21 @@ func (s *basicHandler) handle(w http.ResponseWriter, r *http.Request, checks ...
 		s.collectChecks(checks, checkResults, &status)
 	}
 
-	var body []byte
-	var err error
-	if r.URL.Query().Get("pretty") == "1" {
+	// by default, just include an empty JSON body
+	// (Kubernetes only cares about the HTTP status code)
+	body := []byte(`{}`)
+
+	// if ?full=1, return all the check statuses as JSON
+	if r.URL.Query().Get("full") == "1" {
+		var err error
 		body, err = json.MarshalIndent(checkResults, "", "    ")
-	} else {
-		body, err = json.Marshal(checkResults)
-	}
-	if err != nil {
-		body = []byte(`{"healthcheck": "could not encode health check JSON"}`)
-		status = http.StatusServiceUnavailable
+		if err != nil {
+			body = []byte(`{"healthcheck": "could not encode health check JSON"}`)
+			status = http.StatusServiceUnavailable
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.Header().Set("Content-Length", fmt.Sprint(len(body)))
 	w.WriteHeader(status)
 	w.Write(body)
 }
