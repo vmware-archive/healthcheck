@@ -25,7 +25,7 @@ func TestTimeout(t *testing.T) {
 		return nil
 	}, 1*time.Millisecond)
 	err := tooSlow()
-	if _, isTimeoutError := err.(TimeoutError); !isTimeoutError {
+	if _, isTimeoutError := err.(timeoutError); !isTimeoutError {
 		t.Errorf("expected a TimeoutError, got %v", err)
 	}
 

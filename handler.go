@@ -83,21 +83,20 @@ func (s *basicHandler) handle(w http.ResponseWriter, r *http.Request, checks ...
 		s.collectChecks(checks, checkResults, &status)
 	}
 
-	// by default, just include an empty JSON body
-	// (Kubernetes only cares about the HTTP status code)
-	body := []byte(`{}`)
-
-	// if ?full=1, return all the check statuses as JSON
-	if r.URL.Query().Get("full") == "1" {
-		var err error
-		body, err = json.MarshalIndent(checkResults, "", "    ")
-		if err != nil {
-			body = []byte(`{"healthcheck": "could not encode health check JSON"}`)
-			status = http.StatusServiceUnavailable
-		}
-	}
-
+	// write out the response code and content type header
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(status)
-	w.Write(body)
+
+	// unless ?full=1, return an empty body. Kubernetes only cares about the
+	// HTTP status code, so we won't waste bytes on the full body.
+	if r.URL.Query().Get("full") != "1" {
+		w.Write([]byte("{}\n"))
+		return
+	}
+
+	// otherwise, write the JSON body ignoring any encoding errors (which
+	// shouldn't really be possible since we're encoding a map[string]string).
+	encoder := json.NewEncoder(w)
+	encoder.SetIndent("", "    ")
+	encoder.Encode(checkResults)
 }

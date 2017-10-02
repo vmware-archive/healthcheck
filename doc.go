@@ -13,13 +13,11 @@
 
 /*
 Package healthcheck helps you implement Kubernetes liveness and readiness checks
-for your application. It supports synchronous checks, asynchronous (background)
-checks, and edge-triggered checks.
+for your application. It supports synchronous and asynchronous (background)
+checks. It can optionally report each check's status as a set of Prometheus
+gauge metrics for cluster-wide monitoring and alerting.
 
 It also includes a small library of generic checks for DNS, TCP, and HTTP
 reachability as well as Goroutine usage.
-
-Check status can be reported as a set of Prometheus metrics for easy
-cluster-wide monitoring and alerting.
 */
 package healthcheck

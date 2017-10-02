@@ -19,24 +19,24 @@ import (
 )
 
 // TimeoutError is the error returned when a Timeout-wrapped Check takes too long
-type TimeoutError time.Duration
+type timeoutError time.Duration
 
-func (e TimeoutError) Error() string {
+func (e timeoutError) Error() string {
 	return fmt.Sprintf("timed out after %s", time.Duration(e).String())
 }
 
-// Timeout returns whether this error is a timeout (always true for TimeoutError)
-func (e TimeoutError) Timeout() bool {
+// Timeout returns whether this error is a timeout (always true for timeoutError)
+func (e timeoutError) Timeout() bool {
 	return true
 }
 
-// Temporary returns whether this error is temporary (always true for TimeoutError)
-func (e TimeoutError) Temporary() bool {
+// Temporary returns whether this error is temporary (always true for timeoutError)
+func (e timeoutError) Temporary() bool {
 	return true
 }
 
 // Timeout adds a timeout to a Check. If the underlying check takes longer than
-// the timeout, a TimeoutError is returned.
+// the timeout, it returns an error.
 func Timeout(check Check, timeout time.Duration) Check {
 	return func() error {
 		c := make(chan error, 1)
@@ -45,7 +45,7 @@ func Timeout(check Check, timeout time.Duration) Check {
 		case err := <-c:
 			return err
 		case <-time.After(timeout):
-			return TimeoutError(timeout)
+			return timeoutError(timeout)
 		}
 	}
 }

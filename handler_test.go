@@ -63,7 +63,7 @@ func TestNewHandler(t *testing.T) {
 			live:       true,
 			ready:      true,
 			expect:     http.StatusOK,
-			expectBody: `{}`,
+			expectBody: "{}\n",
 		},
 		{
 			name:       "with no checks, /ready should succeed",
@@ -72,7 +72,7 @@ func TestNewHandler(t *testing.T) {
 			live:       true,
 			ready:      true,
 			expect:     http.StatusOK,
-			expectBody: `{}`,
+			expectBody: "{}\n",
 		},
 		{
 			name:       "with a failing readiness check, /live should still succeed",
@@ -81,7 +81,7 @@ func TestNewHandler(t *testing.T) {
 			live:       true,
 			ready:      false,
 			expect:     http.StatusOK,
-			expectBody: `{}`,
+			expectBody: "{}\n",
 		},
 		{
 			name:       "with a failing readiness check, /ready should fail",
@@ -90,7 +90,7 @@ func TestNewHandler(t *testing.T) {
 			live:       true,
 			ready:      false,
 			expect:     http.StatusServiceUnavailable,
-			expectBody: "{\n    \"test-readiness-check\": \"failed readiness check\"\n}",
+			expectBody: "{\n    \"test-readiness-check\": \"failed readiness check\"\n}\n",
 		},
 		{
 			name:       "with a failing liveness check, /live should fail",
@@ -99,7 +99,7 @@ func TestNewHandler(t *testing.T) {
 			live:       false,
 			ready:      true,
 			expect:     http.StatusServiceUnavailable,
-			expectBody: "{\n    \"test-liveness-check\": \"failed liveness check\"\n}",
+			expectBody: "{\n    \"test-liveness-check\": \"failed liveness check\"\n}\n",
 		},
 		{
 			name:       "with a failing liveness check, /ready should fail",
@@ -108,7 +108,7 @@ func TestNewHandler(t *testing.T) {
 			live:       false,
 			ready:      true,
 			expect:     http.StatusServiceUnavailable,
-			expectBody: "{\n    \"test-liveness-check\": \"failed liveness check\"\n}",
+			expectBody: "{\n    \"test-liveness-check\": \"failed liveness check\"\n}\n",
 		},
 		{
 			name:       "with a failing liveness check, /ready without full=1 should fail with an empty body",
@@ -117,7 +117,7 @@ func TestNewHandler(t *testing.T) {
 			live:       false,
 			ready:      true,
 			expect:     http.StatusServiceUnavailable,
-			expectBody: `{}`,
+			expectBody: "{}\n",
 		},
 	}
 	for _, tt := range tests {

@@ -10,8 +10,6 @@ Healthcheck is a library for implementing Kubernetes [liveness and readiness](ht
 
  - Supports asynchronous checks, which run in a background goroutine at a fixed interval. These are useful for expensive checks that you don't want to add latency to the liveness and readiness endpoints.
 
- - Supports edge-triggered checks which can be useful for batch-style workloads. These are useful when you want to mark a particular task as failed and clean up by restarting.
-
  - Includes a small library of generically useful checks for validating upstream DNS, TCP, and HTTP dependencies as well as checking basic health of the Go runtime.
 
 ## Usage

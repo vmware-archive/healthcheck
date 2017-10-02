@@ -14,7 +14,6 @@
 package healthcheck
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -87,25 +86,6 @@ func Example_advanced() {
 		return nil
 	}, 50*time.Millisecond))
 
-	// Create an edge-triggered check to count failures in some sample
-	// batch-style work that might fail.
-	batchHealth := NewTrigger()
-	health.AddLivenessCheck("trigger-check", batchHealth.Check())
-
-	// Example batch loop:
-	go func() {
-		for _ = range time.Tick(10 * time.Second) {
-			// Do some work that might fail
-			if 1 != 1 {
-				// If the work failed, trip the Trigger with an error
-				batchHealth.Trip(errors.New("batch work failed"))
-			} else {
-				// If the work succeeded, reset the Trigger to clear the failure.
-				batchHealth.Reset()
-			}
-		}
-	}()
-
 	// Expose the readiness endpoints on a custom path /healthz mixed into
 	// our main application mux.
 	mux := http.NewServeMux()
@@ -127,7 +107,6 @@ func Example_advanced() {
 	//
 	// {
 	//     "custom-check-with-timeout": "timed out after 50ms",
-	//     "trigger-check": "OK",
 	//     "upstream-dep-http": "Get http://upstream-svc.example.com:8080/healthy: dial tcp: lookup upstream-svc.example.com: no such host",
 	//     "upstream-dep-tcp": "dial tcp: lookup upstream.example.com: no such host"
 	// }
