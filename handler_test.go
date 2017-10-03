@@ -15,14 +15,16 @@ package healthcheck
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewHandler(t *testing.T) {
+func TestHandlerChecks(t *testing.T) {
 	tests := []struct {
 		name       string
 		method     string
@@ -149,4 +151,31 @@ func TestNewHandler(t *testing.T) {
 			}
 		})
 	}
+}
+
+var full = url.Values{"full": []string{"1"}}
+
+func TestHandlerHooks(t *testing.T) {
+	h := NewHandler()
+	var hookResult error
+	hookCalled := 0
+	h.AddShutdownHook("test", func() error {
+		hookCalled++
+		return hookResult
+	})
+
+	// with a nil error, should return a 200
+	assert.HTTPSuccess(t, h.ShutdownEndpoint, "GET", "/", nil)
+	assert.Equal(t, "{}\n", assert.HTTPBody(h.ShutdownEndpoint, "GET", "/", nil))
+	assert.Equal(t,
+		"{\n    \"test\": \"OK\"\n}\n",
+		assert.HTTPBody(h.ShutdownEndpoint, "GET", "/", full))
+
+	// with an non-nil, error, should return not 200
+	hookResult = fmt.Errorf("some error")
+	assert.HTTPError(t, h.ShutdownEndpoint, "GET", "/", nil)
+	assert.Equal(t, "{}\n", assert.HTTPBody(h.ShutdownEndpoint, "GET", "/", nil))
+	assert.Equal(t,
+		"{\n    \"test\": \"some error\"\n}\n",
+		assert.HTTPBody(h.ShutdownEndpoint, "GET", "/", full))
 }
