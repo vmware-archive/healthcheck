@@ -20,6 +20,9 @@ import (
 // Check is a health/readiness check.
 type Check func() error
 
+// Hook is a prestop hook which can optionally return an error to be included in the Kubernetes termination log.
+type Hook func() error
+
 // Handler is an http.Handler with additional methods that register health and
 // readiness checks. It handles handle "/live" and "/ready" HTTP
 // endpoints.
@@ -41,6 +44,14 @@ type Handler interface {
 	// destroyed.
 	AddReadinessCheck(name string, check Check)
 
+	// AddShutdownHook adds a shutdown hook that will be called whenever
+	// Kubernetes is trying to cleanly shut down your application. It should
+	// block until the application can safely shut down. If it blocks for
+	// longer than allowed by the grace period (specified in Kubernetes) your
+	// hook may not finish executing before the process is terminated.
+	// Any error returned by the hook is included in the Kubernetes termination log
+	AddShutdownHook(name string, hook Hook)
+
 	// LiveEndpoint is the HTTP handler for just the /live endpoint, which is
 	// useful if you need to attach it into your own HTTP handler tree.
 	LiveEndpoint(http.ResponseWriter, *http.Request)
@@ -48,6 +59,10 @@ type Handler interface {
 	// ReadyEndpoint is the HTTP handler for just the /ready endpoint, which is
 	// useful if you need to attach it into your own HTTP handler tree.
 	ReadyEndpoint(http.ResponseWriter, *http.Request)
+
+	// ShutdownEndpoint is the HTTP handler for just the /shutdown endpoint,
+	// which is useful if you need to attach it into your own HTTP handler tree.
+	ShutdownEndpoint(http.ResponseWriter, *http.Request)
 }
 
 // Trigger represents a health check that is tripped by a discrete event such

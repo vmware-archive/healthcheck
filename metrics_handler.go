@@ -43,6 +43,10 @@ func (h *metricsHandler) AddReadinessCheck(name string, check Check) {
 	h.handler.AddReadinessCheck(name, h.wrap(name, check))
 }
 
+func (h *metricsHandler) AddShutdownHook(name string, hook Hook) {
+	h.handler.AddShutdownHook(name, hook)
+}
+
 func (h *metricsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.handler.ServeHTTP(w, r)
 }
@@ -53,6 +57,10 @@ func (h *metricsHandler) LiveEndpoint(w http.ResponseWriter, r *http.Request) {
 
 func (h *metricsHandler) ReadyEndpoint(w http.ResponseWriter, r *http.Request) {
 	h.handler.ReadyEndpoint(w, r)
+}
+
+func (h *metricsHandler) ShutdownEndpoint(w http.ResponseWriter, r *http.Request) {
+	h.handler.ShutdownEndpoint(w, r)
 }
 
 func (h *metricsHandler) wrap(name string, check Check) Check {

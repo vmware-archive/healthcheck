@@ -1,6 +1,6 @@
 # healthcheck
 
-Healthcheck is a library for implementing Kubernetes [liveness and readiness](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/) probe handlers in your Go application.
+Healthcheck is a library for implementing Kubernetes [liveness and readiness](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/) probe handlers and pre-stop lifecycle hooks in your Go application.
 
 ## Features
 
@@ -11,6 +11,8 @@ Healthcheck is a library for implementing Kubernetes [liveness and readiness](ht
  - Supports asynchronous checks, which run in a background goroutine at a fixed interval. These are useful for expensive checks that you don't want to add latency to the liveness and readiness endpoints.
 
  - Includes a small library of generically useful checks for validating upstream DNS, TCP, and HTTP dependencies as well as checking basic health of the Go runtime.
+
+ - Makes it easy to gracefully restart or terminate your application by adding shutdown hooks. Each hook can block shutdown to make sure resources and active connections are cleaned up appropriately. A number of default
 
 ## Usage
 
@@ -39,12 +41,20 @@ See the [GoDoc examples](https://godoc.org/github.com/heptio-labs/healthcheck) f
    	   DNSResolveCheck("upstream.example.com", 50*time.Millisecond))
    ```
 
- - Expose the `/live` and `/ready` endpoints over HTTP (on port 8086):
+ - Configure some application-specific shutdown hooks (to drain traffic cleanly at shutdown)
+   ```go
+   // Our app (an http.Handler) shouldn't terminate until 5 seconds after the
+   // last request has been handled.
+   app, drainHook = healthcheck.HTTPDrainHook(app, 5*time.Second)
+   health.AddShutdownHook("drain-app-requests", drainHook)
+   ```
+
+ - Expose the `/live`, `/ready`, and `/shutdown` endpoints over HTTP (on port 8086):
    ```go
    go http.ListenAndServe("0.0.0.0:8086", health)
    ```
 
- - Configure your Kubernetes container with HTTP liveness and readiness probes see the ([Kubernetes documentation](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/)) for more detail:
+ - Configure your Kubernetes container with HTTP liveness and readiness probes (see the Kubernetes [probe](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/) and [lifecycle hook](https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/) documentation for more detail):
    ```yaml
    # this is a bare bones example
    # copy and paste livenessProbe and readinessProbe as appropriate for your app
@@ -71,6 +81,17 @@ See the [GoDoc examples](https://godoc.org/github.com/heptio-labs/healthcheck) f
            path: /ready
            port: 8086
          periodSeconds: 5
+
+       # define a lifecycle hook to trigger a clean shutdown
+       lifecycle:
+         preStop:
+           httpGet:
+             path: /shutdown
+             port: 8086
+
+       # allow the graceful shutdown flow to block termination for up to 60 seconds
+       # (this is a default that could be overridden for a particular termination)
+       terminationGracePeriodSeconds: 60
    ```
 
  - If one of your readiness checks fails, Kubernetes will stop routing traffic to that pod within a few seconds (depending on `periodSeconds` and other factors).
