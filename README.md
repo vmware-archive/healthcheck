@@ -14,11 +14,11 @@ Healthcheck is a library for implementing Kubernetes [liveness and readiness](ht
 
 ## Usage
 
-See the [GoDoc examples](https://godoc.org/github.com/heptio-labs/healthcheck) for more detail.
+See the [GoDoc examples](https://godoc.org/github.com/heptiolabs/healthcheck) for more detail.
 
- - Install with `go get` or your favorite Go dependency manager: `go get -u github.com/heptio-labs/healthcheck`
+ - Install with `go get` or your favorite Go dependency manager: `go get -u github.com/heptiolabs/healthcheck`
 
- - Import the package: `import "github.com/heptio-labs/healthcheck"`
+ - Import the package: `import "github.com/heptiolabs/healthcheck"`
 
  - Create a `healthcheck.Handler`:
    ```go
