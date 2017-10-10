@@ -50,16 +50,3 @@ type Handler interface {
 	// useful if you need to attach it into your own HTTP handler tree.
 	ReadyEndpoint(http.ResponseWriter, *http.Request)
 }
-
-// Trigger represents a health check that is tripped by a discrete event such
-// as a batch job failing.
-type Trigger interface {
-	// Trip sets the current status of the Trigger to the specified error
-	Trip(error)
-
-	// Reset the trigger to a healthy state (shorthand for Trip(nil)).
-	Reset()
-
-	// Check returns a check function suitable for `Handler.AddHealthCheck`.
-	Check() Check
-}
