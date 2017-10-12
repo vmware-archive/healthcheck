@@ -28,7 +28,7 @@ See the [GoDoc examples](https://godoc.org/github.com/heptiolabs/healthcheck) fo
  - Configure some application-specific liveness checks (whether the app itself is unhealthy):
    ```go
    // Our app is not happy if we've got more than 100 goroutines running.
-   health.AddLivenessCheck("goroutine-threshold", GoroutineCountCheck(100))
+   health.AddLivenessCheck("goroutine-threshold", healthcheck.GoroutineCountCheck(100))
    ```
 
  - Configure some application-specific readiness checks (whether the app is ready to serve requests):
@@ -36,7 +36,7 @@ See the [GoDoc examples](https://godoc.org/github.com/heptiolabs/healthcheck) fo
    // Our app is not ready if we can't resolve our upstream dependency in DNS.
    health.AddReadinessCheck(
        "upstream-dep-dns",
-   	   DNSResolveCheck("upstream.example.com", 50*time.Millisecond))
+   	   healthcheck.DNSResolveCheck("upstream.example.com", 50*time.Millisecond))
    ```
 
  - Expose the `/live` and `/ready` endpoints over HTTP (on port 8086):
