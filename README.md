@@ -1,4 +1,7 @@
 # healthcheck
+[![Build Status](https://travis-ci.org/heptiolabs/healthcheck.svg?branch=master)](https://travis-ci.org/heptiolabs/healthcheck)
+[![Go Report Card](https://goreportcard.com/badge/github.com/heptiolabs/healthcheck)](https://goreportcard.com/report/github.com/heptiolabs/healthcheck)
+[![GoDoc](https://godoc.org/github.com/heptiolabs/healthcheck?status.svg)](https://godoc.org/github.com/heptiolabs/healthcheck)
 
 Healthcheck is a library for implementing Kubernetes [liveness and readiness](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-probes/) probe handlers in your Go application.
 
