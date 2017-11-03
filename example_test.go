@@ -46,17 +46,14 @@ func Example() {
 	// go http.ListenAndServe("0.0.0.0:8080", health)
 
 	// Make a request to the readiness endpoint and print the response.
-	fmt.Print(dumpRequest(health, "GET", "/ready?full=1"))
+	fmt.Print(dumpRequest(health, "GET", "/ready"))
 
 	// Output:
 	// HTTP/1.1 503 Service Unavailable
 	// Connection: close
 	// Content-Type: application/json; charset=utf-8
 	//
-	// {
-	//     "goroutine-threshold": "OK",
-	//     "upstream-dep-dns": "lookup upstream.example.com: no such host"
-	// }
+	// {}
 }
 
 func Example_advanced() {
@@ -99,18 +96,14 @@ func Example_advanced() {
 	time.Sleep(500 * time.Millisecond)
 
 	// Make a sample request to the /healthz endpoint and print the response.
-	fmt.Println(dumpRequest(mux, "GET", "/healthz?full=1"))
+	fmt.Println(dumpRequest(mux, "GET", "/healthz"))
 
 	// Output:
 	// HTTP/1.1 503 Service Unavailable
 	// Connection: close
 	// Content-Type: application/json; charset=utf-8
 	//
-	// {
-	//     "custom-check-with-timeout": "timed out after 50ms",
-	//     "upstream-dep-http": "Get http://upstream-svc.example.com:8080/healthy: dial tcp: lookup upstream-svc.example.com: no such host",
-	//     "upstream-dep-tcp": "dial tcp: lookup upstream.example.com: no such host"
-	// }
+	// {}
 }
 
 func Example_metrics() {
