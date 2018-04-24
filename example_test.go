@@ -163,10 +163,10 @@ func Example_metrics() {
 	adminMux.Handle("/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
 
 	// Expose a liveness check on /live
-	adminMux.HandleFunc("/live", health.LiveEndpoint)
+	adminMux.HandleFunc(oriLiveEndpoint, health.LiveEndpoint)
 
 	// Expose a readiness check on /ready
-	adminMux.HandleFunc("/ready", health.ReadyEndpoint)
+	adminMux.HandleFunc(oriReadyEndpoint, health.ReadyEndpoint)
 
 	// Make a request to the metrics endpoint and print the response.
 	fmt.Println(dumpRequest(adminMux, "GET", "/metrics"))

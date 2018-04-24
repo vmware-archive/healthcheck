@@ -27,6 +27,12 @@ See the [GoDoc examples](https://godoc.org/github.com/heptiolabs/healthcheck) fo
    ```go
    health := healthcheck.NewHandler()
    ```
+   or
+   ```go
+   liveURL := "/liveness"
+   readyURL := "/readiness"
+   health := healthcheck.NewHandlerCustomURL(liveURL, readyURL)
+   ```
 
  - Configure some application-specific liveness checks (whether the app itself is unhealthy):
    ```go

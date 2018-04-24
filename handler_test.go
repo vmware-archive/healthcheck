@@ -23,6 +23,20 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func checkEnpoint(t *testing.T, handler Handler, httpMethod, testPath, expectedBody string, expectedHTTPCode int) {
+	req, err := http.NewRequest(httpMethod, testPath, nil)
+	assert.NoError(t, err)
+
+	reqStr := httpMethod + " " + testPath
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+	assert.Equal(t, expectedHTTPCode, rr.Code, "wrong code for %q", reqStr)
+
+	if expectedBody != "" {
+		assert.Equal(t, expectedBody, rr.Body.String(), "wrong body for %q", reqStr)
+	}
+}
+
 func TestNewHandler(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -137,17 +151,63 @@ func TestNewHandler(t *testing.T) {
 				})
 			}
 
-			req, err := http.NewRequest(tt.method, tt.path, nil)
-			assert.NoError(t, err)
+			checkEnpoint(t, h, tt.method, tt.path, tt.expectBody, tt.expect)
+		})
+	}
+}
 
-			reqStr := tt.method + " " + tt.path
-			rr := httptest.NewRecorder()
-			h.ServeHTTP(rr, req)
-			assert.Equal(t, tt.expect, rr.Code, "wrong code for %q", reqStr)
+func TestNewHandlerCustomURL(t *testing.T) {
+	liveEndpoint := "/liveness"
+	readyEndpoint := "/readiness"
+	emptyEndpoint := ""
 
-			if tt.expectBody != "" {
-				assert.Equal(t, tt.expectBody, rr.Body.String(), "wrong body for %q", reqStr)
-			}
+	tests := []struct {
+		name                  string
+		method                string
+		customLiveEndpoint    string
+		custoReadyEndpoint    string
+		expectedLivenessPath  string
+		expectedReadinessPath string
+		expect                int
+		expectBody            string
+	}{
+		{
+			name:                  "using only custom liveness endpoint, call to custom liveness endpoint and original readiness endpoint should succeed",
+			method:                http.MethodGet,
+			customLiveEndpoint:    liveEndpoint,
+			custoReadyEndpoint:    emptyEndpoint,
+			expectedLivenessPath:  liveEndpoint,
+			expectedReadinessPath: "/ready",
+			expect:                http.StatusOK,
+			expectBody:            "{}\n",
+		},
+		{
+			name:                  "using only custom readiness endpoint, call to custom readiness endpoint and original liveness endpoint should succeed",
+			method:                http.MethodGet,
+			customLiveEndpoint:    emptyEndpoint,
+			custoReadyEndpoint:    readyEndpoint,
+			expectedLivenessPath:  "/live",
+			expectedReadinessPath: readyEndpoint,
+			expect:                http.StatusOK,
+			expectBody:            "{}\n",
+		},
+		{
+			name:                  "with no custom liveness endpoints, the default hanlder should be called and hence original liveness and readiness endpoint should succeed",
+			method:                http.MethodGet,
+			customLiveEndpoint:    emptyEndpoint,
+			custoReadyEndpoint:    emptyEndpoint,
+			expectedLivenessPath:  "/live",
+			expectedReadinessPath: "/ready",
+			expect:                http.StatusOK,
+			expectBody:            "{}\n",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			h := NewHandlerCustomURL(tt.customLiveEndpoint, tt.custoReadyEndpoint)
+			checkEnpoint(t, h, tt.method, tt.expectedLivenessPath, tt.expectBody, tt.expect)
+			checkEnpoint(t, h, tt.method, tt.expectedReadinessPath, tt.expectBody, tt.expect)
 		})
 	}
 }
