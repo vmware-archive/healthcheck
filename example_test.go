@@ -174,7 +174,7 @@ func Example_metrics() {
 	// Output:
 	// HTTP/1.1 200 OK
 	// Content-Length: 245
-	// Content-Type: text/plain; version=0.0.4
+	// Content-Type: text/plain; version=0.0.4; charset=utf-8
 	//
 	// # HELP example_healthcheck_status Current check status (0 indicates success, 1 indicates failure)
 	// # TYPE example_healthcheck_status gauge
