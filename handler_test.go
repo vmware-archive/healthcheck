@@ -28,6 +28,7 @@ func TestNewHandler(t *testing.T) {
 		name       string
 		method     string
 		path       string
+		opts       []HandlerOption
 		live       bool
 		ready      bool
 		expect     int
@@ -120,10 +121,33 @@ func TestNewHandler(t *testing.T) {
 			expect:     http.StatusServiceUnavailable,
 			expectBody: "{}\n",
 		},
+		{
+			name:       "with custom live path should succeed",
+			method:     "GET",
+			path:       "/_live",
+			opts:       []HandlerOption{WithLivenessPath("/_live")},
+			live:       true,
+			ready:      true,
+			expect:     http.StatusOK,
+			expectBody: "{}\n",
+		},
+		{
+			name:       "with custom ready path should succeed",
+			method:     "GET",
+			path:       "/_readiness",
+			opts:       []HandlerOption{WithLivenessPath("/_readiness")},
+			live:       true,
+			ready:      true,
+			expect:     http.StatusOK,
+			expectBody: "{}\n",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			h := NewHandler()
+			if tt.opts != nil {
+				h = NewHandler(tt.opts...)
+			}
 
 			if !tt.live {
 				h.AddLivenessCheck("test-liveness-check", func() error {
