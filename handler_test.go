@@ -135,7 +135,7 @@ func TestNewHandler(t *testing.T) {
 			name:       "with custom ready path should succeed",
 			method:     "GET",
 			path:       "/_readiness",
-			opts:       []HandlerOption{WithLivenessPath("/_readiness")},
+			opts:       []HandlerOption{WithReadinessPath("/_readiness")},
 			live:       true,
 			ready:      true,
 			expect:     http.StatusOK,
