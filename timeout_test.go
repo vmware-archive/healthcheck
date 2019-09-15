@@ -15,17 +15,18 @@
 package healthcheck
 
 import (
+	"context"
 	"net"
 	"testing"
 	"time"
 )
 
 func TestTimeout(t *testing.T) {
-	tooSlow := Timeout(func() error {
+	tooSlow := Timeout(func(ctx context.Context) error {
 		time.Sleep(10 * time.Millisecond)
 		return nil
 	}, 1*time.Millisecond)
-	err := tooSlow()
+	err := tooSlow(context.Background())
 	if _, isTimeoutError := err.(timeoutError); !isTimeoutError {
 		t.Errorf("expected a TimeoutError, got %v", err)
 	}
@@ -38,11 +39,11 @@ func TestTimeout(t *testing.T) {
 		t.Errorf("expected Temporary() to be true, got %v", err)
 	}
 
-	notTooSlow := Timeout(func() error {
+	notTooSlow := Timeout(func(ctx context.Context) error {
 		time.Sleep(1 * time.Millisecond)
 		return nil
 	}, 10*time.Millisecond)
-	if err := notTooSlow(); err != nil {
+	if err := notTooSlow(context.Background()); err != nil {
 		t.Errorf("expected success, got %v", err)
 	}
 }

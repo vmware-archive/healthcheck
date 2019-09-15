@@ -52,7 +52,7 @@ func AsyncWithContext(ctx context.Context, check Check, interval time.Duration) 
 	// make a wrapper that runs the check, and swaps out the current head of
 	// the channel with the latest result
 	update := func() {
-		err := check()
+		err := check(ctx)
 		<-result
 		result <- err
 	}
@@ -76,7 +76,7 @@ func AsyncWithContext(ctx context.Context, check Check, interval time.Duration) 
 	}()
 
 	// return a Check function that closes over our result and mutex
-	return func() error {
+	return func(_ context.Context) error {
 		// peek at the head of the channel, then put it back
 		err := <-result
 		result <- err

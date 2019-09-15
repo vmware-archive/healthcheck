@@ -15,6 +15,7 @@
 package healthcheck
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"net/http"
@@ -23,10 +24,9 @@ import (
 	"strings"
 	"time"
 
-	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
-
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	sqlmock "gopkg.in/DATA-DOG/go-sqlmock.v1"
 )
 
 func Example() {
@@ -109,7 +109,7 @@ func Example_advanced() {
 		HTTPGetCheck(upstreamURL, 500*time.Millisecond))
 
 	// Implement a custom check with a 50 millisecond timeout.
-	health.AddLivenessCheck("custom-check-with-timeout", Timeout(func() error {
+	health.AddLivenessCheck("custom-check-with-timeout", Timeout(func(ctx context.Context) error {
 		// Simulate some work that could take a long time
 		time.Sleep(time.Millisecond * 100)
 		return nil
@@ -146,12 +146,12 @@ func Example_metrics() {
 	health := NewMetricsHandler(registry, "example")
 
 	// Add a simple readiness check that always fails.
-	health.AddReadinessCheck("failing-check", func() error {
+	health.AddReadinessCheck("failing-check", func(ctx context.Context) error {
 		return fmt.Errorf("example failure")
 	})
 
 	// Add a liveness check that always succeeds
-	health.AddLivenessCheck("successful-check", func() error {
+	health.AddLivenessCheck("successful-check", func(ctx context.Context) error {
 		return nil
 	})
 

@@ -23,20 +23,20 @@ import (
 )
 
 func TestAsync(t *testing.T) {
-	async := Async(func() error {
+	async := Async(func(ctx context.Context) error {
 		time.Sleep(50 * time.Millisecond)
 		return nil
 	}, 1*time.Millisecond)
 
 	// expect the first call to return ErrNoData since it takes 50ms to return the first time
-	assert.EqualError(t, async(), "no data yet")
+	assert.EqualError(t, async(context.Background()), "no data yet")
 
 	// wait for the first run to finish
 	time.Sleep(100 * time.Millisecond)
 
 	// make sure the next call returns nil ~immediately
 	start := time.Now()
-	assert.NoError(t, async())
+	assert.NoError(t, async(context.Background()))
 	assert.WithinDuration(t, time.Now(), start, 1*time.Millisecond,
 		"expected async() to return almost immediately")
 }
@@ -46,7 +46,7 @@ func TestAsyncWithContext(t *testing.T) {
 
 	// start an async check that counts how many times it was called
 	calls := 0
-	AsyncWithContext(ctx, func() error {
+	AsyncWithContext(ctx, func(ctx context.Context) error {
 		calls++
 		time.Sleep(1 * time.Millisecond)
 		return nil

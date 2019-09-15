@@ -15,6 +15,7 @@
 package healthcheck
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -25,13 +26,14 @@ import (
 
 func TestNewHandler(t *testing.T) {
 	tests := []struct {
-		name       string
-		method     string
-		path       string
-		live       bool
-		ready      bool
-		expect     int
-		expectBody string
+		name            string
+		method          string
+		path            string
+		live            bool
+		ready           bool
+		canceledContext bool
+		expect          int
+		expectBody      string
 	}{
 		{
 			name:   "GET /foo should generate a 404",
@@ -67,6 +69,16 @@ func TestNewHandler(t *testing.T) {
 			expectBody: "{}\n",
 		},
 		{
+			name:            "with no checks and canceled context, /live should succeed",
+			method:          "GET",
+			path:            "/live",
+			live:            true,
+			ready:           true,
+			canceledContext: true,
+			expect:          http.StatusOK,
+			expectBody:      "{}\n",
+		},
+		{
 			name:       "with no checks, /ready should succeed",
 			method:     "GET",
 			path:       "/ready",
@@ -74,6 +86,16 @@ func TestNewHandler(t *testing.T) {
 			ready:      true,
 			expect:     http.StatusOK,
 			expectBody: "{}\n",
+		},
+		{
+			name:            "with no checks and canceled context, /ready should succeed",
+			method:          "GET",
+			path:            "/ready",
+			live:            true,
+			ready:           true,
+			canceledContext: true,
+			expect:          http.StatusOK,
+			expectBody:      "{}\n",
 		},
 		{
 			name:       "with a failing readiness check, /live should still succeed",
@@ -85,6 +107,16 @@ func TestNewHandler(t *testing.T) {
 			expectBody: "{}\n",
 		},
 		{
+			name:            "with a failing readiness check and canceled context, /live should still succeed",
+			method:          "GET",
+			path:            "/live?full=1",
+			live:            true,
+			ready:           false,
+			canceledContext: true,
+			expect:          http.StatusOK,
+			expectBody:      "{}\n",
+		},
+		{
 			name:       "with a failing readiness check, /ready should fail",
 			method:     "GET",
 			path:       "/ready?full=1",
@@ -92,6 +124,16 @@ func TestNewHandler(t *testing.T) {
 			ready:      false,
 			expect:     http.StatusServiceUnavailable,
 			expectBody: "{\n    \"test-readiness-check\": \"failed readiness check\"\n}\n",
+		},
+		{
+			name:            "with a failing readiness check and canceled context, /ready should fail",
+			method:          "GET",
+			path:            "/ready?full=1",
+			live:            true,
+			ready:           false,
+			canceledContext: true,
+			expect:          http.StatusServiceUnavailable,
+			expectBody:      "{\n    \"test-readiness-check\": \"context canceled\"\n}\n",
 		},
 		{
 			name:       "with a failing liveness check, /live should fail",
@@ -103,6 +145,16 @@ func TestNewHandler(t *testing.T) {
 			expectBody: "{\n    \"test-liveness-check\": \"failed liveness check\"\n}\n",
 		},
 		{
+			name:            "with a failing liveness check and canceled context, /live should fail",
+			method:          "GET",
+			path:            "/live?full=1",
+			live:            false,
+			ready:           true,
+			canceledContext: true,
+			expect:          http.StatusServiceUnavailable,
+			expectBody:      "{\n    \"test-liveness-check\": \"context canceled\"\n}\n",
+		},
+		{
 			name:       "with a failing liveness check, /ready should fail",
 			method:     "GET",
 			path:       "/ready?full=1",
@@ -112,7 +164,17 @@ func TestNewHandler(t *testing.T) {
 			expectBody: "{\n    \"test-liveness-check\": \"failed liveness check\"\n}\n",
 		},
 		{
-			name:       "with a failing liveness check, /ready without full=1 should fail with an empty body",
+			name:            "with a failing liveness check and canceled context, /ready should fail",
+			method:          "GET",
+			path:            "/ready?full=1",
+			live:            false,
+			ready:           true,
+			canceledContext: true,
+			expect:          http.StatusServiceUnavailable,
+			expectBody:      "{\n    \"test-liveness-check\": \"context canceled\"\n}\n",
+		},
+		{
+			name:       "with a fsailing liveness check, /ready without full=1 should fail with an empty body",
 			method:     "GET",
 			path:       "/ready",
 			live:       false,
@@ -126,19 +188,35 @@ func TestNewHandler(t *testing.T) {
 			h := NewHandler()
 
 			if !tt.live {
-				h.AddLivenessCheck("test-liveness-check", func() error {
-					return errors.New("failed liveness check")
+				h.AddLivenessCheck("test-liveness-check", func(ctx context.Context) error {
+					select {
+					case <-ctx.Done():
+						return ctx.Err()
+					default:
+						return errors.New("failed liveness check")
+					}
 				})
 			}
 
 			if !tt.ready {
-				h.AddReadinessCheck("test-readiness-check", func() error {
-					return errors.New("failed readiness check")
+				h.AddReadinessCheck("test-readiness-check", func(ctx context.Context) error {
+					select {
+					case <-ctx.Done():
+						return ctx.Err()
+					default:
+						return errors.New("failed readiness check")
+					}
 				})
 			}
 
 			req, err := http.NewRequest(tt.method, tt.path, nil)
 			assert.NoError(t, err)
+
+			if tt.canceledContext {
+				ctx, cancel := context.WithCancel(context.Background())
+				cancel()
+				req = req.WithContext(ctx)
+			}
 
 			reqStr := tt.method + " " + tt.path
 			rr := httptest.NewRecorder()

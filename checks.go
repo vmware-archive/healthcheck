@@ -27,7 +27,7 @@ import (
 // TCPDialCheck returns a Check that checks TCP connectivity to the provided
 // endpoint.
 func TCPDialCheck(addr string, timeout time.Duration) Check {
-	return func() error {
+	return func(ctx context.Context) error {
 		conn, err := net.DialTimeout("tcp", addr, timeout)
 		if err != nil {
 			return err
@@ -47,8 +47,13 @@ func HTTPGetCheck(url string, timeout time.Duration) Check {
 			return http.ErrUseLastResponse
 		},
 	}
-	return func() error {
-		resp, err := client.Get(url)
+	return func(ctx context.Context) error {
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return err
+		}
+		req = req.WithContext(ctx)
+		resp, err := client.Do(req)
 		if err != nil {
 			return err
 		}
@@ -63,8 +68,8 @@ func HTTPGetCheck(url string, timeout time.Duration) Check {
 // DatabasePingCheck returns a Check that validates connectivity to a
 // database/sql.DB using Ping().
 func DatabasePingCheck(database *sql.DB, timeout time.Duration) Check {
-	return func() error {
-		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	return func(ctx context.Context) error {
+		ctx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
 		if database == nil {
 			return fmt.Errorf("database is nil")
@@ -77,8 +82,8 @@ func DatabasePingCheck(database *sql.DB, timeout time.Duration) Check {
 // to at least one IP address within the specified timeout.
 func DNSResolveCheck(host string, timeout time.Duration) Check {
 	resolver := net.Resolver{}
-	return func() error {
-		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	return func(ctx context.Context) error {
+		ctx, cancel := context.WithTimeout(ctx, timeout)
 		defer cancel()
 		addrs, err := resolver.LookupHost(ctx, host)
 		if err != nil {
@@ -94,7 +99,7 @@ func DNSResolveCheck(host string, timeout time.Duration) Check {
 // GoroutineCountCheck returns a Check that fails if too many goroutines are
 // running (which could indicate a resource leak).
 func GoroutineCountCheck(threshold int) Check {
-	return func() error {
+	return func(ctx context.Context) error {
 		count := runtime.NumGoroutine()
 		if count > threshold {
 			return fmt.Errorf("too many goroutines (%d > %d)", count, threshold)

@@ -15,6 +15,7 @@
 package healthcheck
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"sync"
@@ -59,11 +60,11 @@ func (s *basicHandler) AddReadinessCheck(name string, check Check) {
 	s.readinessChecks[name] = check
 }
 
-func (s *basicHandler) collectChecks(checks map[string]Check, resultsOut map[string]string, statusOut *int) {
+func (s *basicHandler) collectChecks(ctx context.Context, checks map[string]Check, resultsOut map[string]string, statusOut *int) {
 	s.checksMutex.RLock()
 	defer s.checksMutex.RUnlock()
 	for name, check := range checks {
-		if err := check(); err != nil {
+		if err := check(ctx); err != nil {
 			*statusOut = http.StatusServiceUnavailable
 			resultsOut[name] = err.Error()
 		} else {
@@ -81,7 +82,7 @@ func (s *basicHandler) handle(w http.ResponseWriter, r *http.Request, checks ...
 	checkResults := make(map[string]string)
 	status := http.StatusOK
 	for _, checks := range checks {
-		s.collectChecks(checks, checkResults, &status)
+		s.collectChecks(r.Context(), checks, checkResults, &status)
 	}
 
 	// write out the response code and content type header

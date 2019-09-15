@@ -15,6 +15,7 @@
 package healthcheck
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -23,30 +24,47 @@ import (
 )
 
 func TestTCPDialCheck(t *testing.T) {
-	assert.NoError(t, TCPDialCheck("heptio.com:80", 5*time.Second)())
-	assert.Error(t, TCPDialCheck("heptio.com:25327", 5*time.Second)())
+	ctx := context.Background()
+
+	assert.NoError(t, TCPDialCheck("heptio.com:80", 5*time.Second)(ctx))
+	assert.Error(t, TCPDialCheck("heptio.com:25327", 5*time.Second)(ctx))
 }
 
 func TestHTTPGetCheck(t *testing.T) {
-	assert.NoError(t, HTTPGetCheck("https://heptio.com", 5*time.Second)())
-	assert.Error(t, HTTPGetCheck("http://heptio.com", 5*time.Second)(), "redirect should fail")
-	assert.Error(t, HTTPGetCheck("https://heptio.com/nonexistent", 5*time.Second)(), "404 should fail")
+	ctx := context.Background()
+	canceledCtx, cancel := context.WithCancel(ctx)
+	cancel()
+
+	assert.NoError(t, HTTPGetCheck("https://heptio.com", 5*time.Second)(ctx))
+	assert.Error(t, HTTPGetCheck("https://heptio.com", 5*time.Second)(canceledCtx))
+	assert.Error(t, HTTPGetCheck("http://heptio.com", 5*time.Second)(ctx), "redirect should fail")
+	assert.Error(t, HTTPGetCheck("https://heptio.com/nonexistent", 5*time.Second)(ctx), "404 should fail")
 }
 
 func TestDatabasePingCheck(t *testing.T) {
-	assert.Error(t, DatabasePingCheck(nil, 1*time.Second)(), "nil DB should fail")
+	ctx := context.Background()
+	canceledCtx, cancel := context.WithCancel(ctx)
+	cancel()
+
+	assert.Error(t, DatabasePingCheck(nil, 1*time.Second)(ctx), "nil DB should fail")
 
 	db, _, err := sqlmock.New()
 	assert.NoError(t, err)
-	assert.NoError(t, DatabasePingCheck(db, 1*time.Second)(), "ping should succeed")
+	assert.NoError(t, DatabasePingCheck(db, 1*time.Second)(ctx), "ping should succeed")
+	assert.Error(t, DatabasePingCheck(db, 1*time.Second)(canceledCtx), "ping should fail")
 }
 
 func TestDNSResolveCheck(t *testing.T) {
-	assert.NoError(t, DNSResolveCheck("heptio.com", 5*time.Second)())
-	assert.Error(t, DNSResolveCheck("nonexistent.heptio.com", 5*time.Second)())
+	ctx := context.Background()
+	canceledCtx, cancel := context.WithCancel(ctx)
+	cancel()
+
+	assert.NoError(t, DNSResolveCheck("heptio.com", 5*time.Second)(ctx))
+	assert.Error(t, DNSResolveCheck("nonexistent.heptio.com", 5*time.Second)(ctx))
+	assert.Error(t, DNSResolveCheck("heptio.com", 5*time.Second)(canceledCtx))
 }
 
 func TestGoroutineCountCheck(t *testing.T) {
-	assert.NoError(t, GoroutineCountCheck(1000)())
-	assert.Error(t, GoroutineCountCheck(0)())
+	assert.NoError(t, GoroutineCountCheck(1000)(context.Background()))
+	assert.Error(t, GoroutineCountCheck(0)(context.Background()))
 }
