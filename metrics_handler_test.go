@@ -15,6 +15,7 @@
 package healthcheck
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -23,7 +24,6 @@ import (
 	"testing"
 
 	"github.com/prometheus/client_golang/prometheus"
-
 	"github.com/stretchr/testify/assert"
 )
 
@@ -31,13 +31,13 @@ func TestNewMetricsHandler(t *testing.T) {
 	handler := NewMetricsHandler(prometheus.DefaultRegisterer, "test")
 
 	for _, check := range []string{"aaa", "bbb", "ccc"} {
-		handler.AddLivenessCheck(check, func() error {
+		handler.AddLivenessCheck(check, func(ctx context.Context) error {
 			return nil
 		})
 	}
 
 	for _, check := range []string{"ddd", "eee", "fff"} {
-		handler.AddLivenessCheck(check, func() error {
+		handler.AddLivenessCheck(check, func(ctx context.Context) error {
 			return fmt.Errorf("failing health check %q", check)
 		})
 	}
@@ -74,7 +74,7 @@ test_healthcheck_status{check="fff"} 1
 
 func TestNewMetricsHandlerEndpoints(t *testing.T) {
 	handler := NewMetricsHandler(prometheus.NewRegistry(), "test")
-	handler.AddReadinessCheck("fail", func() error {
+	handler.AddReadinessCheck("fail", func(ctx context.Context) error {
 		return fmt.Errorf("failing readiness check")
 	})
 

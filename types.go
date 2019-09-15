@@ -15,11 +15,12 @@
 package healthcheck
 
 import (
+	"context"
 	"net/http"
 )
 
 // Check is a health/readiness check.
-type Check func() error
+type Check func(ctx context.Context) error
 
 // Handler is an http.Handler with additional methods that register health and
 // readiness checks. It handles handle "/live" and "/ready" HTTP

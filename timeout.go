@@ -15,6 +15,7 @@
 package healthcheck
 
 import (
+	"context"
 	"fmt"
 	"time"
 )
@@ -39,13 +40,14 @@ func (e timeoutError) Temporary() bool {
 // Timeout adds a timeout to a Check. If the underlying check takes longer than
 // the timeout, it returns an error.
 func Timeout(check Check, timeout time.Duration) Check {
-	return func() error {
+	return func(ctx context.Context) error {
+		ctx, _ = context.WithTimeout(ctx, timeout)
 		c := make(chan error, 1)
-		go func() { c <- check() }()
+		go func() { c <- check(ctx) }()
 		select {
 		case err := <-c:
 			return err
-		case <-time.After(timeout):
+		case <-ctx.Done():
 			return timeoutError(timeout)
 		}
 	}

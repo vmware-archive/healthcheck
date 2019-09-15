@@ -15,6 +15,7 @@
 package healthcheck
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -66,7 +67,8 @@ func (h *metricsHandler) wrap(name string, check Check) Check {
 			ConstLabels: prometheus.Labels{"check": name},
 		},
 		func() float64 {
-			if check() == nil {
+			ctx := context.Background()
+			if check(ctx) == nil {
 				return 0
 			}
 			return 1
