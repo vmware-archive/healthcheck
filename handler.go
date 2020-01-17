@@ -73,7 +73,8 @@ func (s *basicHandler) collectChecks(checks map[string]Check, resultsOut map[str
 }
 
 func (s *basicHandler) handle(w http.ResponseWriter, r *http.Request, checks ...map[string]Check) {
-	if r.Method != http.MethodGet {
+
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
@@ -87,6 +88,10 @@ func (s *basicHandler) handle(w http.ResponseWriter, r *http.Request, checks ...
 	// write out the response code and content type header
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(status)
+
+	if r.Method == http.MethodHead {
+		return
+	}
 
 	// unless ?full=1, return an empty body. Kubernetes only cares about the
 	// HTTP status code, so we won't waste bytes on the full body.

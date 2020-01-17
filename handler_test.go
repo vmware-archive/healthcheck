@@ -120,6 +120,42 @@ func TestNewHandler(t *testing.T) {
 			expect:     http.StatusServiceUnavailable,
 			expectBody: "{}\n",
 		},
+		{
+			name:       "HEAD with no checks, /live should succeed",
+			method:     "HEAD",
+			path:       "/live",
+			live:       true,
+			ready:      true,
+			expect:     http.StatusOK,
+			expectBody: "",
+		},
+		{
+			name:       "HEAD with no checks, /ready should succeed",
+			method:     "HEAD",
+			path:       "/ready",
+			live:       true,
+			ready:      true,
+			expect:     http.StatusOK,
+			expectBody: "",
+		},
+		{
+			name:       "HEAD with a failing liveness check, /live should fail",
+			method:     "HEAD",
+			path:       "/live",
+			live:       false,
+			ready:      true,
+			expect:     http.StatusServiceUnavailable,
+			expectBody: "",
+		},
+		{
+			name:       "HEAD with a failing liveness check, /ready should fail",
+			method:     "HEAD",
+			path:       "/ready",
+			live:       false,
+			ready:      true,
+			expect:     http.StatusServiceUnavailable,
+			expectBody: "",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
