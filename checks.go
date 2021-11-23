@@ -102,3 +102,19 @@ func GoroutineCountCheck(threshold int) Check {
 		return nil
 	}
 }
+
+// GCMaxPauseCheck returns a Check that fails if any recent Go garbage
+// collection pause exceeds the provided threshold.
+func GCMaxPauseCheck(threshold time.Duration) Check {
+	thresholdNanoseconds := uint64(threshold.Nanoseconds())
+	return func() error {
+		var stats runtime.MemStats
+		runtime.ReadMemStats(&stats)
+		for _, pause := range stats.PauseNs {
+			if pause > thresholdNanoseconds {
+				return fmt.Errorf("recent GC cycle took %s > %s", time.Duration(pause), threshold)
+			}
+		}
+		return nil
+	}
+}

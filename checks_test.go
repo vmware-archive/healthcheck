@@ -15,6 +15,7 @@
 package healthcheck
 
 import (
+	"runtime"
 	"testing"
 	"time"
 
@@ -49,4 +50,10 @@ func TestDNSResolveCheck(t *testing.T) {
 func TestGoroutineCountCheck(t *testing.T) {
 	assert.NoError(t, GoroutineCountCheck(1000)())
 	assert.Error(t, GoroutineCountCheck(0)())
+}
+
+func TestGCMaxPauseCheck(t *testing.T) {
+	runtime.GC()
+	assert.NoError(t, GCMaxPauseCheck(1*time.Second)())
+	assert.Error(t, GCMaxPauseCheck(0)())
 }
