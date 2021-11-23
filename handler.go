@@ -20,6 +20,35 @@ import (
 	"sync"
 )
 
+// default configuration
+var defaultConfig = config{
+	LivenessPath:  "/live",
+	ReadinessPath: "/ready",
+}
+
+// handler configuration
+type config struct {
+	LivenessPath  string
+	ReadinessPath string
+}
+
+// A HandlerOption function can configure the healthcheck handler
+type HandlerOption func(c *config)
+
+// WithLivenessPath configures the liveness URL path
+func WithLivenessPath(p string) HandlerOption {
+	return func(c *config) {
+		c.LivenessPath = p
+	}
+}
+
+// WithReadinessPath configures the readiness URL path
+func WithReadinessPath(p string) HandlerOption {
+	return func(c *config) {
+		c.ReadinessPath = p
+	}
+}
+
 // basicHandler is a basic Handler implementation.
 type basicHandler struct {
 	http.ServeMux
@@ -29,13 +58,19 @@ type basicHandler struct {
 }
 
 // NewHandler creates a new basic Handler
-func NewHandler() Handler {
+func NewHandler(opts ...HandlerOption) Handler {
 	h := &basicHandler{
 		livenessChecks:  make(map[string]Check),
 		readinessChecks: make(map[string]Check),
 	}
-	h.Handle("/live", http.HandlerFunc(h.LiveEndpoint))
-	h.Handle("/ready", http.HandlerFunc(h.ReadyEndpoint))
+
+	cfg := defaultConfig
+	for _, opt := range opts {
+		opt(&cfg)
+	}
+
+	h.Handle(cfg.LivenessPath, http.HandlerFunc(h.LiveEndpoint))
+	h.Handle(cfg.ReadinessPath, http.HandlerFunc(h.ReadyEndpoint))
 	return h
 }
 
