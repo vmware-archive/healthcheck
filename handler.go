@@ -20,6 +20,11 @@ import (
 	"sync"
 )
 
+const (
+	oriLiveEndpoint  = "/live"
+	oriReadyEndpoint = "/ready"
+)
+
 // basicHandler is a basic Handler implementation.
 type basicHandler struct {
 	http.ServeMux
@@ -34,8 +39,29 @@ func NewHandler() Handler {
 		livenessChecks:  make(map[string]Check),
 		readinessChecks: make(map[string]Check),
 	}
-	h.Handle("/live", http.HandlerFunc(h.LiveEndpoint))
-	h.Handle("/ready", http.HandlerFunc(h.ReadyEndpoint))
+
+	h.Handle(oriLiveEndpoint, http.HandlerFunc(h.LiveEndpoint))
+	h.Handle(oriReadyEndpoint, http.HandlerFunc(h.ReadyEndpoint))
+	return h
+}
+
+// NewHandlerCustomURL creates a new basic Handler with custom URL for liveness and readiness
+func NewHandlerCustomURL(customLiveEndpoint, customReadyEndpoint string) Handler {
+	if customLiveEndpoint == "" {
+		customLiveEndpoint = oriLiveEndpoint
+	}
+
+	if customReadyEndpoint == "" {
+		customReadyEndpoint = oriReadyEndpoint
+	}
+
+	h := &basicHandler{
+		livenessChecks:  make(map[string]Check),
+		readinessChecks: make(map[string]Check),
+	}
+
+	h.Handle(customLiveEndpoint, http.HandlerFunc(h.LiveEndpoint))
+	h.Handle(customReadyEndpoint, http.HandlerFunc(h.ReadyEndpoint))
 	return h
 }
 
