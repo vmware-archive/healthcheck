@@ -12,35 +12,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package healthcheck
+package metrics
 
 import (
 	"net/http"
 
+	"github.com/heptiolabs/healthcheck"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
 type metricsHandler struct {
-	handler   Handler
+	handler   healthcheck.Handler
 	registry  prometheus.Registerer
 	namespace string
 }
 
 // NewMetricsHandler returns a healthcheck Handler that also exposes metrics
 // into the provided Prometheus registry.
-func NewMetricsHandler(registry prometheus.Registerer, namespace string) Handler {
+func NewMetricsHandler(registry prometheus.Registerer, namespace string) healthcheck.Handler {
 	return &metricsHandler{
-		handler:   NewHandler(),
+		handler:   healthcheck.NewHandler(),
 		registry:  registry,
 		namespace: namespace,
 	}
 }
 
-func (h *metricsHandler) AddLivenessCheck(name string, check Check) {
+func (h *metricsHandler) AddLivenessCheck(name string, check healthcheck.Check) {
 	h.handler.AddLivenessCheck(name, h.wrap(name, check))
 }
 
-func (h *metricsHandler) AddReadinessCheck(name string, check Check) {
+func (h *metricsHandler) AddReadinessCheck(name string, check healthcheck.Check) {
 	h.handler.AddReadinessCheck(name, h.wrap(name, check))
 }
 
@@ -56,7 +57,7 @@ func (h *metricsHandler) ReadyEndpoint(w http.ResponseWriter, r *http.Request) {
 	h.handler.ReadyEndpoint(w, r)
 }
 
-func (h *metricsHandler) wrap(name string, check Check) Check {
+func (h *metricsHandler) wrap(name string, check healthcheck.Check) healthcheck.Check {
 	h.registry.MustRegister(prometheus.NewGaugeFunc(
 		prometheus.GaugeOpts{
 			Namespace:   h.namespace,

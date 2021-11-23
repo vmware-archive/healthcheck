@@ -24,17 +24,23 @@ import (
 )
 
 func TestTCPDialCheck(t *testing.T) {
-	assert.NoError(t, TCPDialCheck("heptio.com:80", 5*time.Second)())
-	assert.Error(t, TCPDialCheck("heptio.com:25327", 5*time.Second)())
+	t.Parallel()
+
+	assert.NoError(t, TCPDialCheck("heptio.cloud.vmware.com:80", 5*time.Second)())
+	assert.Error(t, TCPDialCheck("heptio.cloud.vmware.com:25327", 5*time.Second)())
 }
 
 func TestHTTPGetCheck(t *testing.T) {
-	assert.NoError(t, HTTPGetCheck("https://heptio.com", 5*time.Second)())
-	assert.Error(t, HTTPGetCheck("http://heptio.com", 5*time.Second)(), "redirect should fail")
-	assert.Error(t, HTTPGetCheck("https://heptio.com/nonexistent", 5*time.Second)(), "404 should fail")
+	t.Parallel()
+
+	assert.NoError(t, HTTPGetCheck("https://heptio.cloud.vmware.com", 5*time.Second)())
+	assert.Error(t, HTTPGetCheck("http://heptio.cloud.vmware.com", 5*time.Second)(), "redirect should fail")
+	assert.Error(t, HTTPGetCheck("https://heptio.cloud.vmware.com/nonexistent", 5*time.Second)(), "404 should fail")
 }
 
 func TestDatabasePingCheck(t *testing.T) {
+	t.Parallel()
+
 	assert.Error(t, DatabasePingCheck(nil, 1*time.Second)(), "nil DB should fail")
 
 	db, _, err := sqlmock.New()
@@ -43,11 +49,15 @@ func TestDatabasePingCheck(t *testing.T) {
 }
 
 func TestDNSResolveCheck(t *testing.T) {
-	assert.NoError(t, DNSResolveCheck("heptio.com", 5*time.Second)())
-	assert.Error(t, DNSResolveCheck("nonexistent.heptio.com", 5*time.Second)())
+	t.Parallel()
+
+	assert.NoError(t, DNSResolveCheck("heptio.cloud.vmware.com", 5*time.Second)())
+	assert.Error(t, DNSResolveCheck("nonexistent.heptio.cloud.vmware.com", 5*time.Second)())
 }
 
 func TestGoroutineCountCheck(t *testing.T) {
+	t.Parallel()
+
 	assert.NoError(t, GoroutineCountCheck(1000)())
 	assert.Error(t, GoroutineCountCheck(0)())
 }
